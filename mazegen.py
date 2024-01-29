@@ -47,13 +47,13 @@ def drawWalls(grid: list, binGrid: list) -> list:
         for xindex, x in enumerate(y):
             for i, w in enumerate(x.walls):
                 if i == 0 and w:
-                    binGrid[yindex*2+1][xindex*2] = '⬛'
+                    binGrid[yindex*2+1][xindex*2] = 1
                 if i == 1 and w:
-                    binGrid[yindex*2+1][xindex*2+2] = '⬛'
+                    binGrid[yindex*2+1][xindex*2+2] = 1
                 if i == 2 and w:
-                    binGrid[yindex*2][xindex*2+1] = '⬛'
+                    binGrid[yindex*2][xindex*2+1] = 1
                 if i == 3 and w:
-                    binGrid[yindex*2+2][xindex*2+1] = '⬛'
+                    binGrid[yindex*2+2][xindex*2+1] = 1
     return binGrid
 
 
@@ -61,9 +61,9 @@ def drawBorder(grid: list) -> list:
     """Draw a border around the maze"""
     length = len(grid)
     for row in grid:
-        row[0] = row[length-1] = '⬛'
+        row[0] = row[length-1] = 1
         
-    grid[0] = grid[length-1] = ['⬛'] * length
+    grid[0] = grid[length-1] = [1] * length
     return grid
 
 
@@ -73,44 +73,42 @@ def displayMaze(grid: list):
     length = len(grid)*2+1
     for x in range(length):
         if x % 2 == 0:
-            binGrid.append(['⬜' if x % 2 != 0 else '⬛' for x in range(length)])
+            binGrid.append([0 if x % 2 != 0 else 1 for x in range(length)])
         else:
-            binGrid.append(['⬜'] * length)
+            binGrid.append([0] * length)
     
     binGrid = drawWalls(grid, binGrid)
             
     binGrid = drawBorder(binGrid)
 
-    print('\n'.join([''.join(x) for x in binGrid]))
+    return binGrid
 
 
-# Request the user to input a maze size and initialise the maze, stack and initial Cell
-size = int(input('Enter a maze size: '))
-grid = [[Cell(x, y) for x in range(size)] for y in range(size)]
-current = grid[0][0]
-stack = []
+def makeMaze(size: int): 
+    # Request the user to input a maze size and initialise the maze, stack and initial Cell
+    grid = [[Cell(x, y) for x in range(size)] for y in range(size)]
+    current = grid[0][0]
+    stack = []
 
 
-# Main loop to generate the maze
-while True:
-    current.visited = True
-    children = current.getChildren(grid)
+    # Main loop to generate the maze
+    while True:
+        current.visited = True
+        children = current.getChildren(grid)
 
-    if children:
-        choice = random.choice(children)
-        choice.visited = True
+        if children:
+            choice = random.choice(children)
+            choice.visited = True
 
-        stack.append(current)
+            stack.append(current)
 
-        removeWalls(current, choice)
+            removeWalls(current, choice)
 
-        current = choice
+            current = choice
+        
+        elif stack:
+            current = stack.pop()
+        else:
+            break
     
-    elif stack:
-        current = stack.pop()
-    else:
-        break
-
-
-# Display the maze
-grid = displayMaze(grid)
+    return displayMaze(grid)
