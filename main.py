@@ -11,8 +11,8 @@ pygame.display.set_caption("Moving rectangle")
 # Player variables
 x = 25
 y = 25
-width = 10
-height = 10
+width = 25
+height = 25
 vel = 1
 starting_position = (x, y)
 # Maze definition
