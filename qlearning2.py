@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class MazeSolver:
-    def __init__(self, maze, start, goal, learning_rate=0.1, discount_factor=0.9, epsilon=0.1, n_episodes=1000):
+    def __init__(self, maze, start, goal, learning_rate=0.1, discount_factor=0.9, epsilon=0.1, n_episodes=5000):
         self.maze = maze
         self.start = start
         self.goal = goal
@@ -10,6 +10,7 @@ class MazeSolver:
         self.discount_factor = discount_factor
         self.epsilon = epsilon
         self.n_episodes = n_episodes
+        self.teleport = (5, 15)
 
         # Maze dimensions
         self.n_rows, self.n_cols = maze.shape
@@ -36,7 +37,10 @@ class MazeSolver:
         elif action == 1: row = min(row + 1, self.n_rows - 1)
         elif action == 2: col = max(col - 1, 0)
         elif action == 3: col = min(col + 1, self.n_cols - 1)
-
+        
+        if (row, col) == self.teleport:
+            return self.to_state(*self.goal), 5, True
+    
         # Reward logic
         if self.maze[row, col] == 1: reward = -1
         elif self.is_terminal_state(row, col): reward = 10
