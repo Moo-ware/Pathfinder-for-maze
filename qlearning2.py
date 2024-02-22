@@ -1,91 +1,75 @@
 import numpy as np
 import random
-from mazegen import makeMaze
 
-# Define the maze (5x5 for illustration)
-maze = np.array(makeMaze(12))
+class MazeSolver:
+    def __init__(self, maze, start, goal, learning_rate=0.1, discount_factor=0.9, epsilon=0.1, n_episodes=1000):
+        self.maze = maze
+        self.start = start
+        self.goal = goal
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
+        self.epsilon = epsilon
+        self.n_episodes = n_episodes
 
-# Maze size
-n_rows, n_cols = maze.shape
-n_states = n_rows * n_cols
-n_actions = 4  # Up, Down, Left, Right
+        # Maze dimensions
+        self.n_rows, self.n_cols = maze.shape
+        self.n_states = self.n_rows * self.n_cols
+        self.n_actions = 4  # Up, Down, Left, Right
 
-# Initialize Q-table
-Q = np.zeros((n_states, n_actions))
+        # Initialize Q-table
+        self.Q = np.zeros((self.n_states, self.n_actions))
 
-# Q-learning parameters
-learning_rate = 0.1
-discount_factor = 0.9
-epsilon = 0.1
-n_episodes = 1000
+    def to_row_col(self, state):
+        return (state // self.n_cols, state % self.n_cols)
 
-# Define start and goal
-start = (1, 1)  # Top-left corner
-goal = (23, 23)  # Bottom-right corner
+    def to_state(self, row, col):
+        return row * self.n_cols + col
 
-# Convert state to row, col
-def to_row_col(state):
-    return (state // n_cols, state % n_cols)
+    def is_terminal_state(self, row, col):
+        return row == self.goal[0] and col == self.goal[1]
 
-# Convert row, col to state
-def to_state(row, col):
-    return row * n_cols + col
+    def step(self, state, action):
+        row, col = self.to_row_col(state)
 
-# Check if the current state is a terminal state (goal)
-def is_terminal_state(row, col):
-    return row == goal[0] and col == goal[1]
+        # Action logic
+        if action == 0: row = max(row - 1, 0)
+        elif action == 1: row = min(row + 1, self.n_rows - 1)
+        elif action == 2: col = max(col - 1, 0)
+        elif action == 3: col = min(col + 1, self.n_cols - 1)
 
-# Get next state and reward
-def step(state, action):
-    row, col = to_row_col(state)
+        # Reward logic
+        if self.maze[row, col] == 1: reward = -1
+        elif self.is_terminal_state(row, col): reward = 10
+        else: reward = -0.01
 
-    if action == 0:  # Up
-        row = max(row - 1, 0)
-    elif action == 1:  # Down
-        row = min(row + 1, n_rows - 1)
-    elif action == 2:  # Left
-        col = max(col - 1, 0)
-    elif action == 3:  # Right
-        col = min(col + 1, n_cols - 1)
+        return self.to_state(row, col), reward, self.is_terminal_state(row, col)
 
-    if maze[row, col] == 1:  # Hitting a wall
-        reward = -1
-    elif is_terminal_state(row, col):  # Goal reached
-        reward = 10
-    else:  # Normal move
-        reward = -0.01
+    def train(self):
+        for episode in range(self.n_episodes):
+            state = self.to_state(*self.start)
+            done = False
 
-    return to_state(row, col), reward, is_terminal_state(row, col)
+            while not done:
+                if random.uniform(0, 1) < self.epsilon:
+                    action = random.randint(0, self.n_actions - 1)
+                else:
+                    action = np.argmax(self.Q[state])
 
-# Training the Q-learning model
-for episode in range(n_episodes):
-    state = to_state(*start)  # Start state
-    done = False
+                next_state, reward, done = self.step(state, action)
 
-    while not done:
-        # Choose action (epsilon-greedy policy)
-        if random.uniform(0, 1) < epsilon:
-            action = random.randint(0, n_actions - 1)
-        else:
-            action = np.argmax(Q[state])
+                # Q-table update
+                self.Q[state, action] += self.learning_rate * (reward + self.discount_factor * np.max(self.Q[next_state]) - self.Q[state, action])
 
-        next_state, reward, done = step(state, action)
+                state = next_state
 
-        # Update Q-table
-        Q[state, action] += learning_rate * (reward + discount_factor * np.max(Q[next_state]) - Q[state, action])
+    def solve(self):
+        self.train()  # Ensure the model is trained
 
-        state = next_state
+        state = self.to_state(*self.start)
+        path = [self.to_row_col(state)]
+        while not self.is_terminal_state(*path[-1]):
+            action = np.argmax(self.Q[state])
+            state, _, _ = self.step(state, action)
+            path.append(self.to_row_col(state))
 
-# Function to find the path from start to goal using the Q-table
-def solve_maze():
-    state = to_state(*start)
-    path = [to_row_col(state)]
-    while not is_terminal_state(*path[-1]):
-        action = np.argmax(Q[state])
-        state, _, _ = step(state, action)
-        path.append(to_row_col(state))
-    return path
-
-# Find the path
-path = solve_maze()
-print("Path from start to goal:", path)
+        return path
